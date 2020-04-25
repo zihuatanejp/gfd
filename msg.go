@@ -1,8 +1,8 @@
 package gfd
 
 import (
-	"bufio"
 	crcrand "crypto/rand"
+	"bufio"
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
@@ -122,56 +122,6 @@ func (m *MsgVal) check(parentchain []MsgVal, mm map[string]MsgVal) (e error) {
 	return e
 }
 
-func scopeRandomSlowly(scope string, n int) string {
-	var table09 = []rune("0123456789")
-	var tableaz = []rune("abcdefghijklmnopqrstuvwxyz")
-	var tableAZ = []rune("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
-	var tablehex = []rune("0123456789abcdef")
-	var scopetable []rune
-	runes := []rune{}
-	switch scope {
-	case "0-9":
-		{
-			scopetable = table09
-		}
-	case "a-z":
-		{
-			scopetable = tableaz
-		}
-	case "A-Z":
-		{
-			scopetable = tableAZ
-		}
-	case "0-9-a-z":
-		{
-			scopetable = append([]rune{}, table09...)
-			scopetable = append(scopetable, tableaz...)
-		}
-	case "hex":
-		{
-			scopetable = tablehex
-		}
-	case "0-9-A-Z":
-		{
-			scopetable = append([]rune{}, table09...)
-			scopetable = append(scopetable, tableAZ...)
-		}
-	case "0-9-a-z-A-Z":
-		{
-			scopetable = append([]rune{}, table09...)
-			scopetable = append(scopetable, tableaz...)
-			scopetable = append(scopetable, tableAZ...)
-		}
-	default:
-		scopetable = table09
-	}
-	for i := 0; i < n; i++ {
-		j, _ := crcrand.Int(crcrand.Reader, big.NewInt(int64(len(scopetable))))
-		runes = append(runes, scopetable[j.Int64()])
-	}
-	return string(runes)
-}
-
 func parseMsgVal(payload []byte, valstart, valend uint64) (r MsgVal) {
 	r = MsgVal{}
 	if valstart > valend {
@@ -240,6 +190,56 @@ func parseMsgVal(payload []byte, valstart, valend uint64) (r MsgVal) {
 		}
 	}
 	return r
+}
+
+func scopeRandomSlowly(scope string, n int) string {
+	var table09 = []rune("0123456789")
+	var tableaz = []rune("abcdefghijklmnopqrstuvwxyz")
+	var tableAZ = []rune("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+	var tablehex = []rune("0123456789abcdef")
+	var scopetable []rune
+	runes := []rune{}
+	switch scope {
+	case "0-9":
+		{
+			scopetable = table09
+		}
+	case "a-z":
+		{
+			scopetable = tableaz
+		}
+	case "A-Z":
+		{
+			scopetable = tableAZ
+		}
+	case "0-9-a-z":
+		{
+			scopetable = append([]rune{}, table09...)
+			scopetable = append(scopetable, tableaz...)
+		}
+	case "hex":
+		{
+			scopetable = tablehex
+		}
+	case "0-9-A-Z":
+		{
+			scopetable = append([]rune{}, table09...)
+			scopetable = append(scopetable, tableAZ...)
+		}
+	case "0-9-a-z-A-Z":
+		{
+			scopetable = append([]rune{}, table09...)
+			scopetable = append(scopetable, tableaz...)
+			scopetable = append(scopetable, tableAZ...)
+		}
+	default:
+		scopetable = table09
+	}
+	for i := 0; i < n; i++ {
+		j, _ := crcrand.Int(crcrand.Reader, big.NewInt(int64(len(scopetable))))
+		runes = append(runes, scopetable[j.Int64()])
+	}
+	return string(runes)
 }
 
 func formatMsgVal(mv MsgVal, cursor uint64) (r []byte, e error) {
