@@ -1,11 +1,15 @@
 package gfd
 
 import (
+	"bufio"
 	crcrand "crypto/rand"
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
+	"io/ioutil"
 	"math/big"
+	"os"
+	"path/filepath"
 	"reflect"
 )
 
@@ -487,14 +491,14 @@ func NewMsg(mb []byte) (m *Msg, err error) {
 	return m, err
 }
 
-func (m *Msg) ToMsgBlock() (mb []byte, e error) {
-	e = m.check()
-	if e != nil {
-		return mb, e
+func (m *Msg) ToMsgBlock() (mb []byte, err error) {
+	err = m.check()
+	if err != nil {
+		return mb, err
 	}
 	mb = append([]byte{}, m.Head...)
 	mb = append(mb, m.Payload...)
-	return mb, e
+	return mb, err
 }
 
 func (m *Msg) Get(key string) (val MsgVal) {
@@ -532,11 +536,49 @@ func (m *Msg) Get(key string) (val MsgVal) {
 	return val
 }
 
-func (m *Msg) ToMsgString() (mstr string, e error) {
-	mb, e := m.ToMsgBlock()
-	if e != nil {
-		return "", e
+func (m *Msg) ToMsgString() (mstr string, err error) {
+	mb, err := m.ToMsgBlock()
+	if err != nil {
+		return "", err
 	}
 	mstr = hex.EncodeToString(mb)
 	return mstr, nil
+}
+
+func (m *Msg) ExportFile(fpath string)(err error)  {
+	mstr,err:=m.ToMsgString()
+	if err != nil {
+		return  err
+	}
+	fm:= os.FileMode(0777)
+	dir := filepath.Dir(fpath)
+	err =os.MkdirAll(dir,fm)
+	if err != nil {
+		return err
+	}
+	f1,err:= os.Create(fpath)
+	defer f1.Close()
+	if err != nil {
+		return err
+	}
+	w := bufio.NewWriterSize(f1,102400)
+	_,err =w.WriteString(mstr)
+	w.Flush()
+	if err!=nil{
+		return err
+	}
+	return nil
+}
+
+func ImportMsgFile(fpath string)(msg *Msg,err error){
+	bb,err:= ioutil.ReadFile(fpath)
+	if err!=nil{
+		return msg,err
+	}
+	bb,err = hex.DecodeString(string(bb))
+	if err!=nil{
+		return msg,err
+	}
+	msg,err = NewMsg(bb)
+	return msg,err
 }
