@@ -79,7 +79,7 @@ m5["m3"] = MsgVal{ValType:"list",ValList:m3}
 
 mb,err:=m5.ToMsgBlock()  // just by one line of code
 
-// how to get all structed data ?
+// how to get all structed data from a MsgBlock ?
 msgmap,err:= NewMsgMap(mb) // just by one line of code
 
 
