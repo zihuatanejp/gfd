@@ -545,40 +545,40 @@ func (m *Msg) ToMsgString() (mstr string, err error) {
 	return mstr, nil
 }
 
-func (m *Msg) ExportFile(fpath string)(err error)  {
-	mstr,err:=m.ToMsgString()
-	if err != nil {
-		return  err
-	}
-	fm:= os.FileMode(0777)
-	dir := filepath.Dir(fpath)
-	err =os.MkdirAll(dir,fm)
+func (m *Msg) ExportFile(fpath string) (err error) {
+	mstr, err := m.ToMsgString()
 	if err != nil {
 		return err
 	}
-	f1,err:= os.Create(fpath)
+	fm := os.FileMode(0777)
+	dir := filepath.Dir(fpath)
+	err = os.MkdirAll(dir, fm)
+	if err != nil {
+		return err
+	}
+	f1, err := os.Create(fpath)
 	defer f1.Close()
 	if err != nil {
 		return err
 	}
-	w := bufio.NewWriterSize(f1,102400)
-	_,err =w.WriteString(mstr)
+	w := bufio.NewWriterSize(f1, 102400)
+	_, err = w.WriteString(mstr)
 	w.Flush()
-	if err!=nil{
+	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func ImportMsgFile(fpath string)(msg *Msg,err error){
-	bb,err:= ioutil.ReadFile(fpath)
-	if err!=nil{
-		return msg,err
+func ImportMsgFile(fpath string) (msg *Msg, err error) {
+	bb, err := ioutil.ReadFile(fpath)
+	if err != nil {
+		return msg, err
 	}
-	bb,err = hex.DecodeString(string(bb))
-	if err!=nil{
-		return msg,err
+	bb, err = hex.DecodeString(string(bb))
+	if err != nil {
+		return msg, err
 	}
-	msg,err = NewMsg(bb)
-	return msg,err
+	msg, err = NewMsg(bb)
+	return msg, err
 }

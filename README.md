@@ -62,10 +62,10 @@ mstr,err:= msg.ToMsgString()
 msg,err :=NewMsg(mb)  
 // the NewMsg method parameter can be []byte or string.
 
-msg.ExportFile(path)
+msg.ExportFile(`C:\app\mpack.txt`)
 // output data to a file, file content will be overwrite, if file not exist,will be create and write.
 
-msg,err := ImportMsgFile(path)
+msg,err := ImportMsgFile(`C:\app\mpack.txt`)
 // import it back
 
 //How to Set nested data ?
