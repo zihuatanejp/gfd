@@ -333,7 +333,7 @@ func genMsgVal(val interface{}) (r []byte, e error) {
 		r = append([]byte{}, byte(2))
 		r = append(r, valbyte...)
 	} else {
-		return r, errors.New("val type is string/[]byte")
+		return r, errors.New("val type is not string/[]byte")
 	}
 	return r, e
 }
@@ -457,8 +457,26 @@ func (m *Msg) Remove(key string) (err error) {
 	return err
 }
 
-func NewMsg(mb []byte) (m *Msg, err error) {
+func NewMsg(val interface{}) (m *Msg, err error) {
 	m = new(Msg)
+	var mb []byte = []byte{}
+	if val != nil {
+		switch value := val.(type) {
+		case string:
+			{
+				mb, err = hex.DecodeString(value)
+				if err != nil {
+					return m, err
+				}
+			}
+		case []byte:
+			{
+				mb = value
+			}
+		default:
+			return m, errors.New("val type is not []byte/string")
+		}
+	}
 	mblen := len(mb)
 	if mblen <= 0 {
 		msgidstr := scopeRandomSlowly("hex", 64)
