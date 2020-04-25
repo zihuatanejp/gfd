@@ -582,3 +582,114 @@ func ImportMsgFile(fpath string) (msg *Msg, err error) {
 	msg, err = NewMsg(bb)
 	return msg, err
 }
+
+func (mm MsgMap) ToMsgBlock() (mb []byte, err error) {
+	msgid, ok := mm[`MsgId`]
+	if !ok {
+		return mb, errors.New("no msgid error")
+	}
+	if len(msgid.ValText) != 64 {
+		return mb, errors.New("wrong msgid")
+	}
+	msgidbytes, err := hex.DecodeString(msgid.ValText)
+	if err != nil {
+		return mb, errors.New("wrong msgid")
+	}
+	headlenbytes := make([]byte, 8)
+	binary.BigEndian.PutUint64(headlenbytes, 48)
+	payloadlenbytes := make([]byte, 8)
+	binary.BigEndian.PutUint64(payloadlenbytes, 0)
+	mb = append([]byte{}, msgidbytes...)
+	mb = append(mb, headlenbytes...)
+	mb = append(mb, payloadlenbytes...)
+	m, err := NewMsg(mb)
+	if err != nil {
+		return mb, err
+	}
+	m.Payload = []byte{}
+	var keystart uint64 = 0
+	var keyend uint64
+	var valstart uint64
+	var valend uint64
+	var cursor uint64 = 0
+	for k, v := range mm {
+		if k == "MsgId" {
+			continue
+		}
+		parentchain := []MsgVal{}
+		e := v.check(parentchain, mm)
+		if e != nil {
+			return mb, e
+		}
+		keybytes := []byte(k)
+		keystart = cursor
+		keyend = keystart + uint64(len(keybytes))
+		valstart = keyend
+		valbytes, err := formatMsgVal(v, valstart)
+		if err != nil {
+			return mb, err
+		}
+		valend = valstart + uint64(len(valbytes))
+		cursor = valend
+		headitemkeystart := make([]byte, 8)
+		binary.BigEndian.PutUint64(headitemkeystart, keystart)
+		headitemkeyend := make([]byte, 8)
+		binary.BigEndian.PutUint64(headitemkeyend, keyend)
+		headitemvalstart := make([]byte, 8)
+		binary.BigEndian.PutUint64(headitemvalstart, valstart)
+		headitemvalend := make([]byte, 8)
+		binary.BigEndian.PutUint64(headitemvalend, valend)
+		headitem := append([]byte{}, headitemkeystart...)
+		headitem = append(headitem, headitemkeyend...)
+		headitem = append(headitem, headitemvalstart...)
+		headitem = append(headitem, headitemvalend...)
+		m.Head = append(m.Head, headitem...)
+		payloaditem := append([]byte{}, keybytes...)
+		payloaditem = append(payloaditem, valbytes...)
+		m.Payload = append(m.Payload, payloaditem...)
+	}
+	headlen := uint64(len(m.Head))
+	binary.BigEndian.PutUint64(m.Head[32:40], headlen)
+	payloadlen := uint64(len(m.Payload))
+	binary.BigEndian.PutUint64(m.Head[40:48], payloadlen)
+	mb, err = m.ToMsgBlock()
+	return mb, err
+}
+
+func NewMsgMap(mb []byte) (mm MsgMap, err error) {
+	mm = make(map[string]MsgVal)
+	mblen := len(mb)
+	if mblen <= 0 {
+		msgidstr := scopeRandomSlowly("hex", 64)
+		mm[`MsgId`] = MsgVal{ValType: "text", ValText: msgidstr}
+	} else {
+		m, err := NewMsg(mb)
+		if err != nil {
+			return mm, err
+		}
+		err = m.check()
+		if err != nil {
+			return mm, err
+		}
+		mm[`MsgId`] = MsgVal{ValType: "text", ValText: m.MsgId}
+		headlen := binary.BigEndian.Uint64(m.Head[32:40])
+		allheaditemlen := headlen - 48
+		var keystart uint64
+		var keyend uint64
+		var valstart uint64
+		var valend uint64
+		var fp uint64
+		var i uint64 = 0
+		for i = 0; i < (allheaditemlen)/32; i++ {
+			fp = i*32 + 48
+			keystart = binary.BigEndian.Uint64(m.Head[fp : fp+8])
+			keyend = binary.BigEndian.Uint64(m.Head[fp+8 : fp+16])
+			valstart = binary.BigEndian.Uint64(m.Head[fp+16 : fp+24])
+			valend = binary.BigEndian.Uint64(m.Head[fp+24 : fp+32])
+			key := string(m.Payload[keystart:keyend])
+			val := parseMsgVal(m.Payload, valstart, valend)
+			mm[key] = val
+		}
+	}
+	return mm, err
+}
