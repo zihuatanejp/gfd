@@ -70,19 +70,17 @@ msg,err := ImportMsgFile(path)
 
 //How to Set nested data ?
 // eg data like this:
-m5:=make(map[string]MsgVal)
+m5:=NewMsgMap(nil)
 m1 := MsgVal{ValType:"text",ValText:"aaaaaa"}
 m2 := MsgVal{ValType:"text",ValText:"bbbbb"}
 m3 := []Msgval{m1,m2}
-msgidstr := ScopeRandomSlowly("hex",64)
-m5["MsgId"] = MsgVal{ValType:"text",ValText:msgidstr}
 m5["k1"] = MsgVal{ValType:"text",ValText:"a1"}
 m5["m3"] = MsgVal{ValType:"list",ValList:m3}
 
-mb,err:=MsgMapToMsgBlock(m5)  // just by one line of code
+mb,err:=m5.ToMsgBlock()  // just by one line of code
 
 // how to get all structed data ?
-msgmap,err:= MsgBlockToMsgMap(mb3) // just by one line of code
+msgmap,err:= NewMsgMap(mb) // just by one line of code
 
 
 ```
